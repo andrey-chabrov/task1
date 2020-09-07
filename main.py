@@ -278,7 +278,6 @@ class TestFunctions(unittest.TestCase):
                 board[posr][posc] = s
             move_count += 1
 
-        print(move_count)
         return move_count
 
     def test_get_independent_vertexes(self):
@@ -380,7 +379,7 @@ class TestFunctions(unittest.TestCase):
         ]
         posr, posc = 2, 0
 
-        expected_move_count = self.clean_board(board, posr, posc, next_move_reference)
+        expected_move_count = 18
         result_move_count = self.clean_board(board, posr, posc, next_move)
 
         self.assertEqual(expected_move_count, result_move_count)
@@ -396,7 +395,7 @@ class TestFunctions(unittest.TestCase):
         ]
         posr, posc = 2, 2
 
-        expected_move_count = self.clean_board(board, posr, posc, next_move_reference)
+        expected_move_count = 33
         result_move_count = self.clean_board(board, posr, posc, next_move)
 
         self.assertEqual(expected_move_count, result_move_count)
@@ -413,7 +412,7 @@ class TestFunctions(unittest.TestCase):
         ]
         posr, posc = 3, 6
 
-        expected_move_count = self.clean_board(board, posr, posc, next_move_reference)
+        expected_move_count = 30
         result_move_count = self.clean_board(board, posr, posc, next_move)
 
         self.assertEqual(expected_move_count, result_move_count)
