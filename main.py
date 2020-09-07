@@ -251,6 +251,36 @@ def next_move_reference(posr, posc, dim_x, dim_y, board):
 
 class TestFunctions(unittest.TestCase):
 
+    @staticmethod
+    def get_bot_coord(board, posr, posc, move):
+        if move == UP:
+            return posr - 1, posc
+        elif move == DOWN:
+            return posr + 1, posc
+        elif move == LEFT:
+            return posr, posc - 1
+        elif move == RIGHT:
+            return posr, posc + 1
+        else:
+            return posr, posc
+
+    def clean_board(self, base_board, posr, posc, next_move_function):
+        board = copy.deepcopy(base_board)
+        move_count, max_move_count = 0, 300
+
+        for move_count in range(max_move_count):
+            move = next_move_function(posr, posc, None, None, board)
+            if move is None:
+                break
+
+            posr, posc = self.get_bot_coord(board, posr, posc, move)
+            if board[posr][posc] == d and move == CLEAN:
+                board[posr][posc] = s
+            move_count += 1
+
+        print(move_count)
+        return move_count
+
     def test_get_independent_vertexes(self):
         board = (
             (d, s, d, s, d),
@@ -339,35 +369,6 @@ class TestFunctions(unittest.TestCase):
         result = next_move(posr, posc, None, None, board)
 
         self.assertEqual(set(expected), set(result))
-
-    @staticmethod
-    def get_bot_coord(board, posr, posc, move):
-        if move == UP:
-            return posr - 1, posc
-        elif move == DOWN:
-            return posr + 1, posc
-        elif move == LEFT:
-            return posr, posc - 1
-        elif move == RIGHT:
-            return posr, posc + 1
-        else:
-            return posr, posc
-
-    def clean_board(self, base_board, posr, posc, next_move_function):
-        board = copy.deepcopy(base_board)
-        move_count, max_move_count = 0, 300
-
-        for move_count in range(max_move_count):
-            move = next_move_function(posr, posc, None, None, board)
-            if move is None:
-                break
-
-            posr, posc = self.get_bot_coord(board, posr, posc, move)
-            if board[posr][posc] == d and move == CLEAN:
-                board[posr][posc] = s
-            move_count += 1
-
-        return move_count
 
     def test_next_move2(self):
         board = [
