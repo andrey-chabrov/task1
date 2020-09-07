@@ -166,7 +166,6 @@ def get_vertex_list(board):
 
 def next_move(posr, posc, dim_x, dim_y, board):
     if board[posr][posc] == d:
-        print(CLEAN)
         return CLEAN
 
     independent_vertexes = get_independent_vertexes(posr, posc, board)
@@ -183,8 +182,6 @@ def next_move(posr, posc, dim_x, dim_y, board):
     for vertex_path in vertex_permutations:
         full_vertex_path = get_full_path((posr, posc), vertex_path)
         distance = calculate_distance_for_path(full_vertex_path)
-        #print(full_vertex_path)
-        #print(distance)
 
         if min_path is None:
             min_path = vertex_path
@@ -198,18 +195,14 @@ def next_move(posr, posc, dim_x, dim_y, board):
         min_i, min_j = min_path[0]
         if min_i - posr != 0:
             if min_i - posr < 0:
-                print(UP)
                 return UP
             else:
-                print(DOWN)
                 return DOWN
 
         if min_j - posc != 0:
             if min_j - posc > 0:
-                print(RIGHT)
                 return RIGHT
             else:
-                print(LEFT)
                 return LEFT
 
     return
@@ -217,7 +210,6 @@ def next_move(posr, posc, dim_x, dim_y, board):
 
 def next_move_reference(posr, posc, dim_x, dim_y, board):
     if board[posr][posc] == d:
-        print(CLEAN)
         return CLEAN
 
     vertex_list = get_vertex_list(board)
@@ -231,8 +223,6 @@ def next_move_reference(posr, posc, dim_x, dim_y, board):
     for vertex_path in vertex_permutations:
         full_vertex_path = get_full_path((posr, posc), vertex_path)
         distance = calculate_distance_for_path(full_vertex_path)
-        #print(full_vertex_path)
-        #print(distance)
 
         if min_path is None:
             min_path = vertex_path
@@ -246,18 +236,14 @@ def next_move_reference(posr, posc, dim_x, dim_y, board):
         min_i, min_j = min_path[0]
         if min_i - posr != 0:
             if min_i - posr < 0:
-                print(UP)
                 return UP
             else:
-                print(DOWN)
                 return DOWN
 
         if min_j - posc != 0:
             if min_j - posc > 0:
-                print(RIGHT)
                 return RIGHT
             else:
-                print(LEFT)
                 return LEFT
 
     return
@@ -400,15 +386,31 @@ class TestFunctions(unittest.TestCase):
 
     def test_next_move3(self):
         board = [
-            [s, s, s, s, s, s, s, s, s, s],
-            [s, s, s, s, s, s, s, s, s, s],
-            [s, s, s, s, s, s, s, s, s, s],
-            [d, d, d, d, d, s, s, s, s, d],
-            [d, s, s, s, s, s, s, s, s, s],
-            [s, s, s, s, s, s, s, s, s, s],
-            [s, s, s, s, s, s, s, s, s, s],
+            [d, s, s, d, s, d],
+            [d, s, s, s, s, s],
+            [s, s, s, d, s, s],
+            [s, s, d, s, d, s],
+            [d, s, s, s, s, d],
+            [s, s, s, d, s, s],
         ]
-        posr, posc = 3, 5
+        posr, posc = 2, 2
+
+        expected_move_count = self.clean_board(board, posr, posc, next_move_reference)
+        result_move_count = self.clean_board(board, posr, posc, next_move)
+
+        self.assertEqual(expected_move_count, result_move_count)
+
+    def test_next_move4(self):
+        board = [
+            [s, s, s, s, s, s, s, s, s, s],
+            [s, s, s, s, s, s, s, s, s, s],
+            [s, s, s, s, s, s, s, s, s, s],
+            [d, d, s, d, d, s, s, s, s, d],
+            [d, d, s, d, s, s, s, s, s, s],
+            [s, s, s, s, s, s, s, s, s, s],
+            [s, s, s, s, s, s, s, d, s, s],
+        ]
+        posr, posc = 3, 6
 
         expected_move_count = self.clean_board(board, posr, posc, next_move_reference)
         result_move_count = self.clean_board(board, posr, posc, next_move)
