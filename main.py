@@ -164,17 +164,7 @@ def get_vertex_list(board):
     return vertex_list
 
 
-def next_move(posr, posc, dim_x, dim_y, board):
-    if board[posr][posc] == d:
-        return CLEAN
-
-    independent_vertexes = get_independent_vertexes(posr, posc, board)
-    nearest_vertex_list = get_nearest_vertexes(posr, posc, board=board)
-    vertex_list = list(set(nearest_vertex_list + independent_vertexes))
-
-    if not vertex_list:
-        return
-
+def select_direction_vertex(posr, posc, vertex_list):
     vertex_permutations = itertools.permutations(vertex_list)
     min_path = None
     min_distance = None
@@ -193,6 +183,24 @@ def next_move(posr, posc, dim_x, dim_y, board):
 
     if min_path is not None:
         min_i, min_j = min_path[0]
+        return min_i, min_j
+
+
+def next_move(posr, posc, dim_x, dim_y, board):
+    if board[posr][posc] == d:
+        return CLEAN
+
+    independent_vertexes = get_independent_vertexes(posr, posc, board)
+
+    nearest_vertex_list = get_nearest_vertexes(posr, posc, board=board)
+    vertex_list = list(set(nearest_vertex_list + independent_vertexes))
+
+    if not vertex_list:
+        return
+
+    next_vertex = select_direction_vertex(posr, posc, vertex_list)
+    if next_vertex is not None:
+        min_i, min_j = next_vertex
         if min_i - posr != 0:
             if min_i - posr < 0:
                 return UP
