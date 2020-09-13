@@ -2,6 +2,8 @@ import copy
 import itertools
 import unittest
 
+from pprint import pprint
+
 
 b = 'b'
 d = 'd'
@@ -186,7 +188,167 @@ def select_direction_vertex(posr, posc, vertex_list):
         return min_i, min_j
 
 
+def create_necessary_vertex_map(vertex_list, board):
+    necessary_vertex_map = {}
+    for vertex in vertex_list:
+        i, j = vertex
+        vertex_list_without_current_vertex = vertex_list[:]
+        vertex_list_without_current_vertex.remove(vertex)
+
+        nearest_vertexes = get_nearest_vertexes(i, j, base_vertex_list=vertex_list_without_current_vertex)
+
+        independent_vertexes_base = get_independent_vertexes(i, j, board)
+        independent_vertexes = independent_vertexes_base
+
+        necessary_vertexes = frozenset(nearest_vertexes + independent_vertexes)
+
+        necessary_vertex_map[vertex] = frozenset(necessary_vertexes)
+
+    return necessary_vertex_map
+
+
+def create_full_vertex_map(vertex_list):
+    vertex_map = {}
+    for vertex in vertex_list:
+        vertex_list_without_current_vertex = vertex_list[:]
+        vertex_list_without_current_vertex.remove(vertex)
+
+        vertex_map[vertex] = frozenset(vertex_list_without_current_vertex)
+
+    return vertex_map
+
+
+def calculate_distances_between_vertexes_map(vertex_map):
+    vertex_distance_map = {}
+    for current_vertex in vertex_map.keys():
+        for neighbour in vertex_map[current_vertex]:
+            vertex_path = (current_vertex, neighbour)
+            # using frozenset allows handle path in both directions:
+            # d(current_vertex, neighbour) = d(neighbour, current_vertex)
+            vertex_distance_map[frozenset(vertex_path)] = calculate_distance_for_path(vertex_path)
+
+    return vertex_distance_map
+
+
+def create_path_tree(root_vertex, vertex_distance_map, nearest_vertex_map):
+    if not vertex_distance_map or not nearest_vertex_map:
+        return
+
+    path_tree = {
+        'distance': 0,
+        'parent': None,
+        'childs': [],
+        'vertex': root_vertex,
+        'used_vertexes': [],
+        'is_handled': False,
+
+        # presents only in root node
+        'last_nodes': []
+    }
+    parent_node = path_tree
+    finish = False
+
+    while not finish:
+        no_childs_added = True
+        parent_vertex = parent_node['vertex']
+        for neighbour_vertex in nearest_vertex_map[parent_vertex]:
+
+            if parent_node['is_handled']:
+                break
+
+            if neighbour_vertex in parent_node['used_vertexes']:
+                continue
+            no_childs_added = False
+
+            current_node = {
+                'distance':
+                    vertex_distance_map[frozenset([parent_vertex, neighbour_vertex])] +
+                    parent_node['distance'],
+                'parent': parent_node,
+                'childs': [],
+                'vertex': neighbour_vertex,
+                'used_vertexes': parent_node['used_vertexes'] + [parent_node['vertex']],
+                'is_handled': False,
+            }
+            parent_node['childs'].append(current_node)
+
+        parent_node['is_handled'] = True
+
+        if no_childs_added:
+
+            # check if this node is the last one
+            if not parent_node['childs']:
+                path_tree['last_nodes'].append(parent_node)
+
+            parent_node = parent_node['parent']
+            if parent_node is None:
+                finish = True
+            else:
+                for node in parent_node['childs']:
+                    if not node['is_handled']:
+                        parent_node = node
+                        break
+        else:
+            child = parent_node['childs'][0]
+            parent_node = child
+
+    return path_tree
+
+
+def get_correct_path_list(path_tree, vertex_count):
+    correct_path_len = vertex_count
+    optimal_correct_path = None
+    optimal_distance = 0
+
+    for last_node in path_tree['last_nodes']:
+        full_path = last_node['used_vertexes'] + [last_node['vertex']]
+        if len(full_path) == correct_path_len:
+            if optimal_correct_path is None:
+                optimal_correct_path = full_path
+                optimal_distance = last_node['distance']
+
+            if optimal_distance > last_node['distance']:
+                optimal_correct_path = full_path
+                optimal_distance = last_node['distance']
+
+    return optimal_correct_path, optimal_distance
+
+
 def next_move(posr, posc, dim_x, dim_y, board):
+    if board[posr][posc] == d:
+        return CLEAN
+
+    root_vertex = (posr, posc)
+
+    vertex_list = get_vertex_list(board)
+    full_vertex_list = list(set([root_vertex] + vertex_list))
+
+    necessary_vertex_map = create_necessary_vertex_map(full_vertex_list, board)
+    vertex_distances_map = calculate_distances_between_vertexes_map(necessary_vertex_map)
+
+    path_tree = create_path_tree(root_vertex, vertex_distances_map, necessary_vertex_map)
+    vertex_count = len(full_vertex_list)
+
+    path = get_correct_path_list(path_tree, vertex_count)[0]
+    if path is not None:
+        next_vertex = path[1]
+        min_i, min_j = next_vertex
+        if min_i - posr != 0:
+            if min_i - posr < 0:
+                return UP
+            else:
+                return DOWN
+
+        if min_j - posc != 0:
+            if min_j - posc > 0:
+                return RIGHT
+            else:
+                return LEFT
+
+    return
+
+
+def next_move_last(posr, posc, dim_x, dim_y, board):
     if board[posr][posc] == d:
         return CLEAN
 
@@ -424,6 +586,52 @@ class TestFunctions(unittest.TestCase):
         result_move_count = self.clean_board(board, posr, posc, next_move)
 
         self.assertEqual(expected_move_count, result_move_count)
+
+    def test_path_tree1(self):
+        board = [
+            [s, s, d, d, s],
+            [s, s, s, s, s],
+            [s, s, s, s, s],
+            [d, s, s, s, s],
+            [d, s, s, s, s],
+        ]
+        root_vertex = (2, 2)
+
+        vertex_list = get_vertex_list(board)
+        full_vertex_list = list(set([root_vertex] + vertex_list))
+        necessary_vertex_map = create_full_vertex_map(full_vertex_list)
+        vertex_distances_map = calculate_distances_between_vertexes_map(necessary_vertex_map)
+
+        path_tree = create_path_tree(root_vertex, vertex_distances_map, necessary_vertex_map)
+        vertex_count = len(full_vertex_list)
+
+        print(get_correct_path_list(path_tree, vertex_count))
+
+        self.assertEqual(True, True)
+
+    def test_path_tree2(self):
+        board = [
+            [d, s, s, s, d, s, s],
+            [s, d, s, s, s, s, s],
+            [s, s, s, s, d, s, s],
+            [s, s, s, s, s, s, s],
+            [s, d, s, s, s, s, s],
+            [s, s, s, d, s, s, s],
+            [s, s, s, s, s, s, s],
+        ]
+        root_vertex = (0, 0)
+
+        vertex_list = get_vertex_list(board)
+        full_vertex_list = list(set([root_vertex] + vertex_list))
+        necessary_vertex_map = create_full_vertex_map(full_vertex_list)
+        vertex_distances_map = calculate_distances_between_vertexes_map(necessary_vertex_map)
+
+        path_tree = create_path_tree(root_vertex, vertex_distances_map, necessary_vertex_map)
+        vertex_count = len(full_vertex_list)
+
+        print(get_correct_path_list(path_tree, vertex_count))
+
+        self.assertEqual(True, True)
 
 
 if __name__ == '__main__':
