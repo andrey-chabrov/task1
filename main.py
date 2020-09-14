@@ -188,25 +188,6 @@ def select_direction_vertex(posr, posc, vertex_list):
         return min_i, min_j
 
 
-def create_necessary_vertex_map(vertex_list, board):
-    necessary_vertex_map = {}
-    for vertex in vertex_list:
-        i, j = vertex
-        vertex_list_without_current_vertex = vertex_list[:]
-        vertex_list_without_current_vertex.remove(vertex)
-
-        nearest_vertexes = get_nearest_vertexes(i, j, base_vertex_list=vertex_list_without_current_vertex)
-
-        independent_vertexes_base = get_independent_vertexes(i, j, board)
-        independent_vertexes = independent_vertexes_base
-
-        necessary_vertexes = frozenset(nearest_vertexes + independent_vertexes)
-
-        necessary_vertex_map[vertex] = frozenset(necessary_vertexes)
-
-    return necessary_vertex_map
-
-
 def create_full_vertex_map(vertex_list):
     vertex_map = {}
     for vertex in vertex_list:
@@ -321,13 +302,19 @@ def next_move(posr, posc, dim_x, dim_y, board):
     root_vertex = (posr, posc)
 
     vertex_list = get_vertex_list(board)
-    full_vertex_list = list(set([root_vertex] + vertex_list))
 
-    necessary_vertex_map = create_necessary_vertex_map(full_vertex_list, board)
+    nearest_vertexes = get_nearest_vertexes(posr, posc, base_vertex_list=vertex_list)
+    independent_vertexes = get_independent_vertexes(posr, posc, board)
+    necessary_vertexes = [root_vertex] + list(frozenset(nearest_vertexes + independent_vertexes))
+
+    necessary_vertex_map = create_full_vertex_map(necessary_vertexes)
     vertex_distances_map = calculate_distances_between_vertexes_map(necessary_vertex_map)
 
     path_tree = create_path_tree(root_vertex, vertex_distances_map, necessary_vertex_map)
-    vertex_count = len(full_vertex_list)
+    vertex_count = len(necessary_vertexes)
+
+    if path_tree is None:
+        return
 
     path = get_correct_path_list(path_tree, vertex_count)[0]
     if path is not None:
